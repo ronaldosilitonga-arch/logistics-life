@@ -33,7 +33,6 @@ export class City extends Scene {
     private energy = 80;
     private money = 100;
     private parcel = false;
-    private completed = false;
     private message = 'Pick up a parcel at Dispatch.';
     private player!: GameObjects.Graphics;
     private keys!: Record<string, Input.Keyboard.Key>;
@@ -141,16 +140,15 @@ export class City extends Scene {
             this.energy = 100;
             this.minutes += 30;
             this.message = 'Rested at home. Energy restored.';
-        } else if (name === 'Dispatch' && !this.completed) {
+        } else if (name === 'Dispatch') {
+            this.message = this.parcel
+                ? 'You already have a parcel. Take it to the Kiosk.'
+                : 'Parcel collected. Take it to the Kiosk.';
             this.parcel = true;
-            this.message = 'Parcel collected. Take it to the Kiosk.';
         } else if (name === 'Kiosk' && this.parcel) {
             this.parcel = false;
-            this.completed = true;
             this.money += 50;
             this.message = 'Delivered! You earned ₱50.';
-        } else if (this.completed) {
-            this.message = 'Delivery complete. Explore the block or rest at home.';
         } else {
             this.message = 'Kiosk: We’re expecting a parcel from Dispatch.';
         }
@@ -161,7 +159,7 @@ export class City extends Scene {
         const hour = String(Math.floor(minute / 60) % 24).padStart(2, '0');
         const clock = `${hour}:${String(minute % 60).padStart(2, '0')}`;
         const stats = `Day ${Math.floor(minute / 1440) + 1} · ${clock}  /  Energy ${Math.ceil(this.energy)}%  /  ₱${this.money}`;
-        const objective = this.completed ? 'Delivery complete' : this.parcel ? 'Deliver the parcel to the Kiosk' : 'Collect a parcel at Dispatch';
+        const objective = this.parcel ? 'Deliver the parcel to the Kiosk' : 'Collect a parcel at Dispatch';
         const task = `${objective} — ${this.message}`;
         const prompt = nearby ? `E · ${nearby}` : 'WASD / Arrows · Move';
         if (this.stats.textContent !== stats) this.stats.textContent = stats;
