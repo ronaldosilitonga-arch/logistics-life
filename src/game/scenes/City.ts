@@ -32,6 +32,7 @@ export class City extends Scene {
     private minutes = 8 * 60;
     private energy = 80;
     private money = 100;
+    private deliveriesCompleted = 0;
     private parcel = false;
     private message = 'Pick up a parcel at Dispatch.';
     private player!: GameObjects.Graphics;
@@ -148,6 +149,7 @@ export class City extends Scene {
         } else if (name === 'Kiosk' && this.parcel) {
             this.parcel = false;
             this.money += 50;
+            this.deliveriesCompleted++;
             this.message = 'Delivered! You earned ₱50.';
         } else {
             this.message = 'Kiosk: We’re expecting a parcel from Dispatch.';
@@ -158,7 +160,7 @@ export class City extends Scene {
         const minute = Math.floor(this.minutes);
         const hour = String(Math.floor(minute / 60) % 24).padStart(2, '0');
         const clock = `${hour}:${String(minute % 60).padStart(2, '0')}`;
-        const stats = `Day ${Math.floor(minute / 1440) + 1} · ${clock}  /  Energy ${Math.ceil(this.energy)}%  /  ₱${this.money}`;
+        const stats = `Day ${Math.floor(minute / 1440) + 1} · ${clock}  /  Energy ${Math.ceil(this.energy)}%  /  ₱${this.money}  /  Deliveries completed: ${this.deliveriesCompleted}`;
         const objective = this.parcel ? 'Deliver the parcel to the Kiosk' : 'Collect a parcel at Dispatch';
         const task = `${objective} — ${this.message}`;
         const prompt = nearby ? `E · ${nearby}` : 'WASD / Arrows · Move';
