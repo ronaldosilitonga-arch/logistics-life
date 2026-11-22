@@ -6,6 +6,8 @@ const stops = [
     { x: 10, y: 6, name: 'Dispatch', color: 0x71bcb3, height: 85 },
     { x: 10, y: 10, name: 'Kiosk', color: 0xf3c76c, height: 47 }
 ];
+const dispatcher = { x: 8, y: 7, name: 'Dispatcher' };
+const interactionTargets = [...stops, dispatcher];
 
 function project(x: number, y: number) {
     return { x: 650 + (x - y) * 34, y: 120 + (x + y) * 17 };
@@ -75,6 +77,18 @@ export class City extends Scene {
             }).setOrigin(0.5).setDepth(2000);
         }
 
+        const dispatcherPosition = project(dispatcher.x, dispatcher.y);
+        const npc = this.add.graphics(dispatcherPosition).setDepth(dispatcherPosition.y);
+        npc.fillStyle(0x213b44, 0.55).fillEllipse(0, 0, 24, 11);
+        npc.fillStyle(0x243e51).fillRoundedRect(-7, -13, 14, 14, 3);
+        npc.fillStyle(0x71bcb3).fillRoundedRect(-9, -23, 18, 17, 5);
+        npc.fillStyle(0x9e674d).fillCircle(0, -26, 6);
+        npc.fillStyle(0x325d59).fillEllipse(0, -30, 15, 7);
+        this.add.text(dispatcherPosition.x, dispatcherPosition.y - 39, dispatcher.name, {
+            fontFamily: 'system-ui', fontSize: '12px', color: '#fff7db',
+            backgroundColor: '#203b46', padding: { x: 5, y: 2 }
+        }).setOrigin(0.5, 1).setDepth(2000);
+
         const p = project(this.x, this.y);
         this.player = this.add.graphics({ x: p.x, y: p.y });
         this.player.fillStyle(0x213b44, 0.55).fillEllipse(0, 0, 24, 11);
@@ -109,9 +123,9 @@ export class City extends Scene {
 
         const p = project(this.x, this.y);
         this.player.setPosition(p.x, p.y).setDepth(p.y);
-        const nearby = stops
-            .map(stop => ({ name: stop.name, distance: Math.hypot(this.x - stop.x, this.y - stop.y) }))
-            .filter(stop => stop.distance < 1.35)
+        const nearby = interactionTargets
+            .map(target => ({ name: target.name, distance: Math.hypot(this.x - target.x, this.y - target.y) }))
+            .filter(target => target.distance < 1.35)
             .sort((a, b) => a.distance - b.distance)[0];
 
         if (nearby && Input.Keyboard.JustDown(E)) this.interact(nearby.name);
@@ -121,7 +135,9 @@ export class City extends Scene {
     }
 
     private interact(name: string) {
-        if (name === 'Apartment') {
+        if (name === dispatcher.name) {
+            this.message = 'Dispatcher: Hi! Welcome to Dispatch.';
+        } else if (name === 'Apartment') {
             this.energy = 100;
             this.minutes += 30;
             this.message = 'Rested at home. Energy restored.';
