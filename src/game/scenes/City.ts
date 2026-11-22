@@ -8,6 +8,7 @@ const stops = [
 ];
 const dispatcher = { x: 8, y: 7, name: 'Dispatcher' };
 const interactionTargets = [...stops, dispatcher];
+const deliverySaveKey = 'logistics-life:delivery-progress';
 
 function project(x: number, y: number) {
     return { x: 650 + (x - y) * 34, y: 120 + (x + y) * 17 };
@@ -42,6 +43,7 @@ export class City extends Scene {
     private prompt = document.querySelector<HTMLElement>('#prompt')!;
 
     create() {
+        this.restoreDeliveryProgress();
         const ground = this.add.graphics();
         for (let y = 0; y < side; y++) {
             for (let x = 0; x < side; x++) {
@@ -142,17 +144,53 @@ export class City extends Scene {
             this.minutes += 30;
             this.message = 'Rested at home. Energy restored.';
         } else if (name === 'Dispatch') {
-            this.message = this.parcel
-                ? 'You already have a parcel. Take it to the Kiosk.'
-                : 'Parcel collected. Take it to the Kiosk.';
-            this.parcel = true;
+            if (this.parcel) {
+                this.message = 'You already have a parcel. Take it to the Kiosk.';
+            } else {
+                this.parcel = true;
+                this.saveDeliveryProgress();
+                this.message = 'Parcel collected. Take it to the Kiosk.';
+            }
         } else if (name === 'Kiosk' && this.parcel) {
             this.parcel = false;
             this.money += 50;
             this.deliveriesCompleted++;
+            this.saveDeliveryProgress();
             this.message = 'Delivered! You earned ₱50.';
         } else {
             this.message = 'Kiosk: We’re expecting a parcel from Dispatch.';
+        }
+    }
+
+    private restoreDeliveryProgress() {
+        try {
+            const saved = localStorage.getItem(deliverySaveKey);
+            if (saved === null) return;
+            const progress: { money?: unknown; deliveriesCompleted?: unknown; parcel?: unknown } | null = JSON.parse(saved);
+            if (!progress ||
+                typeof progress.money !== 'number' || !Number.isSafeInteger(progress.money) || progress.money < 0 ||
+                typeof progress.deliveriesCompleted !== 'number' || !Number.isSafeInteger(progress.deliveriesCompleted) ||
+                progress.deliveriesCompleted < 0 || typeof progress.parcel !== 'boolean') {
+                return;
+            }
+            this.money = progress.money;
+            this.deliveriesCompleted = progress.deliveriesCompleted;
+            this.parcel = progress.parcel;
+            if (this.parcel) this.message = 'Take the parcel to the Kiosk.';
+        } catch {
+            // Keep the fresh-game defaults if storage is inaccessible or the save is unreadable.
+        }
+    }
+
+    private saveDeliveryProgress() {
+        try {
+            localStorage.setItem(deliverySaveKey, JSON.stringify({
+                money: this.money,
+                deliveriesCompleted: this.deliveriesCompleted,
+                parcel: this.parcel
+            }));
+        } catch {
+            // Keep the session playable if the browser blocks storage writes.
         }
     }
 
