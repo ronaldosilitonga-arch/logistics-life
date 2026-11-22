@@ -1,17 +1,16 @@
 <!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/favicon.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="/style.css">
-    <title>Phaser - Template</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Logistics Life</title>
 </head>
-
 <body>
-    <div id="app">
-        <div id="game-container"></div>
-    </div>
+    <main id="app">
+        <header><h1>Logistics Life</h1><p id="stats"></p></header>
+        <div id="game-container" aria-label="Isometric city block"></div>
+        <footer><p id="task" role="status"></p><p id="prompt"></p></footer>
+    </main>
     <script type="module" src="/src/main.ts"></script>
 </body>
 </html>
