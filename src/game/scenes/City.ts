@@ -27,6 +27,12 @@ function solid(x: number, y: number) {
     return stops.some(stop => Math.abs(stop.x - x) < 0.7 && Math.abs(stop.y - y) < 0.7);
 }
 
+function restoreNumber(value: unknown, fallback: number, max = Infinity) {
+    return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= max
+        ? value
+        : fallback;
+}
+
 export class City extends Scene {
     private x = 7;
     private y = 8;
@@ -43,7 +49,10 @@ export class City extends Scene {
     private prompt = document.querySelector<HTMLElement>('#prompt')!;
 
     create() {
-        this.restoreDeliveryProgress();
+        this.restoreProgress();
+        const saveOnPageHide = () => this.saveProgress();
+        window.addEventListener('pagehide', saveOnPageHide);
+        this.events.once('shutdown', () => window.removeEventListener('pagehide', saveOnPageHide));
         const ground = this.add.graphics();
         for (let y = 0; y < side; y++) {
             for (let x = 0; x < side; x++) {
@@ -142,31 +151,32 @@ export class City extends Scene {
         } else if (name === 'Apartment') {
             this.energy = 100;
             this.minutes += 30;
+            this.saveProgress();
             this.message = 'Rested at home. Energy restored.';
         } else if (name === 'Dispatch') {
             if (this.parcel) {
                 this.message = 'You already have a parcel. Take it to the Kiosk.';
             } else {
                 this.parcel = true;
-                this.saveDeliveryProgress();
+                this.saveProgress();
                 this.message = 'Parcel collected. Take it to the Kiosk.';
             }
         } else if (name === 'Kiosk' && this.parcel) {
             this.parcel = false;
             this.money += 50;
             this.deliveriesCompleted++;
-            this.saveDeliveryProgress();
+            this.saveProgress();
             this.message = 'Delivered! You earned ₱50.';
         } else {
             this.message = 'Kiosk: We’re expecting a parcel from Dispatch.';
         }
     }
 
-    private restoreDeliveryProgress() {
+    private restoreProgress() {
         try {
             const saved = localStorage.getItem(deliverySaveKey);
             if (saved === null) return;
-            const progress: { money?: unknown; deliveriesCompleted?: unknown; parcel?: unknown } | null = JSON.parse(saved);
+            const progress: Record<string, unknown> | null = JSON.parse(saved);
             if (!progress ||
                 typeof progress.money !== 'number' || !Number.isSafeInteger(progress.money) || progress.money < 0 ||
                 typeof progress.deliveriesCompleted !== 'number' || !Number.isSafeInteger(progress.deliveriesCompleted) ||
@@ -176,18 +186,30 @@ export class City extends Scene {
             this.money = progress.money;
             this.deliveriesCompleted = progress.deliveriesCompleted;
             this.parcel = progress.parcel;
+            const x = restoreNumber(progress.x, this.x, side - 1);
+            const y = restoreNumber(progress.y, this.y, side - 1);
+            if (!solid(x, y)) {
+                this.x = x;
+                this.y = y;
+            }
+            this.energy = restoreNumber(progress.energy, this.energy, 100);
+            this.minutes = restoreNumber(progress.minutes, this.minutes);
             if (this.parcel) this.message = 'Take the parcel to the Kiosk.';
         } catch {
             // Keep the fresh-game defaults if storage is inaccessible or the save is unreadable.
         }
     }
 
-    private saveDeliveryProgress() {
+    private saveProgress() {
         try {
             localStorage.setItem(deliverySaveKey, JSON.stringify({
                 money: this.money,
                 deliveriesCompleted: this.deliveriesCompleted,
-                parcel: this.parcel
+                parcel: this.parcel,
+                x: this.x,
+                y: this.y,
+                energy: this.energy,
+                minutes: this.minutes
             }));
         } catch {
             // Keep the session playable if the browser blocks storage writes.
